@@ -1,0 +1,24 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: gateway-server
+  config:
+    import: 'optional:configserver:'
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: config-server
+
+eureka:
+  instance:
+    prefer-ip-address: false
+    hostname: localhost
+
+  client:
+    register-with-eureka: true
+    fetch-registry: true # 클라이언트 사이드 로드밸런싱을 위해, 유레카 정보를 다운 받는다.
+    service-url:
+      defaultZone: http://localhost:9150/eureka/
