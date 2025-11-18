@@ -8,9 +8,8 @@ spring:
     import: 'optional:configserver:'
   cloud:
     config:
-      discovery:
-        enabled: true
-        service-id: config-server
+      uri: http://3.38.80.105:9100
+      fail-fast: true # Config Server 연결 실패 시 애플리케이션을 즉시 종료
 
 eureka:
   instance:
@@ -21,4 +20,4 @@ eureka:
     register-with-eureka: true
     fetch-registry: true # 클라이언트 사이드 로드밸런싱을 위해, 유레카 정보를 다운 받는다.
     service-url:
-      defaultZone: http://localhost:9150/eureka/
+      defaultZone: http://3.38.80.105:9150/eureka/
