@@ -8,8 +8,9 @@ spring:
     import: 'optional:configserver:'
   cloud:
     config:
-      uri: http://3.38.80.105:9100
-      fail-fast: true # Config Server 연결 실패 시 애플리케이션을 즉시 종료
+      discovery:
+        enabled: true
+        service-id: config-server
 
 eureka:
   instance:
