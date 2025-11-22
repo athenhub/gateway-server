@@ -1,16 +1,50 @@
 server:
   port: 9000
+  # Nginx 뒤에 있을 때 X-Forwarded-* 헤더 기반으로 https URL 잘 만들게 해줌
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: gateway-server
+
   config:
     import: 'optional:configserver:'
+
   cloud:
     config:
       discovery:
         enabled: true
         service-id: config-server
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://auth.athenhub.xyz/realms/athenhub-dev
+      client:
+        registration:
+          keycloak:
+            client-id: ${KEYCLOAK_CLIENT_ID}         # Keycloak Client ID
+            client-secret: ${KEYCLOAK_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - openid
+              - profile
+              - email
+        provider:
+          keycloak:
+            issuer-uri: https://auth.athenhub.xyz/realms/athenhub-dev # OAuth 제공자(Keycloak)의 "기준주소"
+            # user-name-attribute: preferred_username  # 로그인 성공 이후 사용자를 뭐라고 부를지"
+
+keycloak:
+  server-url: https://keycloak.code-factory.co.kr
+  realm: athenhub-dev
+  client-id: ${KEYCLOCK_CLIENT_ID}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET}
+  admin-username: ${KEYCLOAK_ADMIN_USERNAME}
+  admin-password: ${KEYCLOAK_ADMIN_PASSWORD}
+
 
 eureka:
   instance:

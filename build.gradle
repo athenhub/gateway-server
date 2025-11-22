@@ -17,8 +17,18 @@ java {
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
+    maven {
+        name = "GitHubPublicPackages"
+        url = uri("https://maven.pkg.github.com/athenhub/common")
+        credentials {
+            // gradle.properties 나 환경변수에서 읽어옴
+            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
 }
+
 
 ext {
 	set('springCloudVersion', "2025.0.0")
@@ -30,9 +40,17 @@ dependencies {
 	implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
 	implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    // actuator
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
+    // Security + OAuth 관련
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    implementation 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+
+    implementation 'com.athenhub:common-core:1.2.0'
+
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
