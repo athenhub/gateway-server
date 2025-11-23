@@ -1,9 +1,10 @@
 package com.athenhub.gatewayserver.config;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
-import com.athenhub.commoncore.error.GlobalErrorCode;
 import com.athenhub.gatewayserver.error.GatewayAuthenticationException;
+import com.athenhub.gatewayserver.error.GlobalErrorCode;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -26,20 +27,27 @@ import reactor.core.publisher.Mono;
 class LoginFilterTest {
 
   private LoginFilter loginFilter;
-  private Jwt jwtWithSlackId;    // slack_id 있음
+  private Jwt jwtWithSlackId; // slack_id 있음
   private Jwt jwtWithoutSlackId; // slack_id 없음
 
   @BeforeEach
   void setUp() {
-    // LoginFilter가 ObjectMapper를 더 이상 받지 않는다고 가정
     loginFilter = new LoginFilter();
-    jwtWithSlackId = createJwt(true);
-    jwtWithoutSlackId = createJwt(false);
+
+    // 기본 JWT: slack_id 있고, ROLE_만 있는 단순한 형태
+    jwtWithSlackId =
+        createJwt(true, List.of("ROLE_MASTER_MANAGER", "ROLE_HUB_MANAGER"), "slack_id", "U123456");
+
+    jwtWithoutSlackId =
+        createJwt(false, List.of("ROLE_MASTER_MANAGER", "ROLE_HUB_MANAGER"), null, null);
   }
 
-  private Jwt createJwt(boolean includeSlackId) {
+  private Jwt createJwt(
+      boolean includeSlackId,
+      List<String> roles,
+      String slackIdKey, // "slack_id" or "slackId" or null
+      String slackIdValue) {
     Instant now = Instant.now();
-
     Map<String, Object> headers = Map.of("alg", "none");
 
     Map<String, Object> claims = new HashMap<>();
@@ -47,20 +55,55 @@ class LoginFilterTest {
     claims.put("preferred_username", "johndoe");
     claims.put("given_name", "길동");
     claims.put("family_name", "홍");
-    // 필터에서 ROLE_ 로 시작하는 값만 헤더에 넣기 때문에 이렇게 세팅
-    claims.put("roles", List.of("ROLE_MASTER_MANAGER", "ROLE_HUB_MANAGER"));
 
-    if (includeSlackId) {
-      claims.put("slack_id", "U123456");
+    if (roles != null) {
+      claims.put("roles", roles);
     }
 
-    return new Jwt(
-        "dummy-token",
-        now,
-        now.plusSeconds(3600),
-        headers,
-        claims
-    );
+    if (includeSlackId && slackIdKey != null) {
+      claims.put(slackIdKey, slackIdValue);
+    }
+
+    return new Jwt("dummy-token", now, now.plusSeconds(3600), headers, claims);
+  }
+
+  @Test
+  @DisplayName("roles 중 ROLE_로 시작하는 값만 X-User-Roles 헤더에 포함한다")
+  void onlyRolePrefixValuesAreAdded() {
+    // given
+    Instant now = Instant.now();
+    Map<String, Object> headers = Map.of("alg", "none");
+
+    Map<String, Object> claims = new HashMap<>();
+    claims.put("sub", "user-1234");
+    claims.put("preferred_username", "johndoe");
+    claims.put("given_name", "길동");
+    claims.put("family_name", "홍");
+    claims.put("roles", List.of("ROLE_MASTER_MANAGER", "read", "ROLE_HUB_MANAGER", "write"));
+    claims.put("slack_id", "U123456");
+
+    Jwt jwt = new Jwt("dummy-token", now, now.plusSeconds(3600), headers, claims);
+    Authentication auth = new JwtAuthenticationToken(jwt);
+
+    MockServerHttpRequest request = MockServerHttpRequest.get("/v1/hubs").build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
+
+    AtomicReference<ServerHttpRequest> capturedRequest = new AtomicReference<>();
+    GatewayFilterChain chain =
+        ex -> {
+          capturedRequest.set(ex.getRequest());
+          return Mono.empty();
+        };
+
+    // when
+    loginFilter
+        .filter(exchange, chain)
+        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth))
+        .block();
+
+    // then
+    var h = capturedRequest.get().getHeaders();
+    assertThat(h.getFirst("X-User-Roles")).isEqualTo("ROLE_MASTER_MANAGER,ROLE_HUB_MANAGER");
   }
 
   @Test
@@ -69,34 +112,33 @@ class LoginFilterTest {
     // given
     Authentication auth = new JwtAuthenticationToken(jwtWithSlackId);
 
-    MockServerHttpRequest request = MockServerHttpRequest.get("/v1/hubs")
-        // LoginFilter 안에서 Authorization 헤더를 검사/사용할 수 있으므로 같이 넣어줌
-        .header(HttpHeaders.AUTHORIZATION, "Bearer dummy-token")
-        .build();
+    MockServerHttpRequest request =
+        MockServerHttpRequest.get("/v1/hubs")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer dummy-token")
+            .build();
     MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
     AtomicReference<ServerHttpRequest> capturedRequest = new AtomicReference<>();
 
-    GatewayFilterChain chain = ex -> {
-      capturedRequest.set(ex.getRequest());
-      return Mono.empty();
-    };
+    GatewayFilterChain chain =
+        ex -> {
+          capturedRequest.set(ex.getRequest());
+          return Mono.empty();
+        };
 
     // when
-    loginFilter.filter(exchange, chain)
+    loginFilter
+        .filter(exchange, chain)
         .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth))
         .block();
 
     // then
-    assertThat(capturedRequest.get())
-        .as("체인이 호출되어야 한다")
-        .isNotNull();
+    assertThat(capturedRequest.get()).as("체인이 호출되어야 한다").isNotNull();
 
     var headers = capturedRequest.get().getHeaders();
     assertThat(headers.getFirst("X-User-Id")).isEqualTo("user-1234");
     assertThat(headers.getFirst("X-Username")).isEqualTo("johndoe");
-    assertThat(headers.getFirst("X-User-Roles"))
-        .isEqualTo("ROLE_MASTER_MANAGER,ROLE_HUB_MANAGER");
+    assertThat(headers.getFirst("X-User-Roles")).isEqualTo("ROLE_MASTER_MANAGER,ROLE_HUB_MANAGER");
     assertThat(headers.getFirst("X-Slack-Id")).isEqualTo("U123456");
     assertThat(headers.getFirst("X-User-Name")).isNotBlank();
 
@@ -110,23 +152,25 @@ class LoginFilterTest {
     // given
     Authentication auth = new JwtAuthenticationToken(jwtWithoutSlackId);
 
-    var request = MockServerHttpRequest.get("/v1/hubs")
-        .header(HttpHeaders.AUTHORIZATION, "Bearer dummy-token")
-        .build();
+    var request =
+        MockServerHttpRequest.get("/v1/hubs")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer dummy-token")
+            .build();
     var exchange = MockServerWebExchange.from(request);
 
     GatewayFilterChain chain = ex -> Mono.empty();
 
     // when
-    Throwable throwable = catchThrowable(() ->
-        loginFilter.filter(exchange, chain)
-            .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth))
-            .block()
-    );
+    Throwable throwable =
+        catchThrowable(
+            () ->
+                loginFilter
+                    .filter(exchange, chain)
+                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth))
+                    .block());
 
     // then
-    assertThat(throwable)
-        .isInstanceOf(GatewayAuthenticationException.class);
+    assertThat(throwable).isInstanceOf(GatewayAuthenticationException.class);
 
     GatewayAuthenticationException ex = (GatewayAuthenticationException) throwable;
     assertThat(ex.getErrorCode()).isEqualTo(GlobalErrorCode.UNAUTHORIZED);
