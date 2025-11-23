@@ -53,7 +53,11 @@ public class SecurityConfig {
                 exchanges
                     // 헬스 체크, 모니터링, 문서 등 공개 엔드포인트
                     .pathMatchers(
-                        "/actuator/health", "/actuator/info", "/swagger-ui.html", "/swagger-ui/**")
+                        "/actuator/health",
+                        "/actuator/info",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**")
                     .permitAll()
 
                     // 그 외 모든 요청은 JWT 인증 필요
