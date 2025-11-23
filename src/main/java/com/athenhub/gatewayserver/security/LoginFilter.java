@@ -1,4 +1,4 @@
-package com.athenhub.gatewayserver.config;
+package com.athenhub.gatewayserver.security;
 
 import com.athenhub.gatewayserver.error.GatewayAuthenticationException;
 import com.athenhub.gatewayserver.error.GlobalErrorCode;

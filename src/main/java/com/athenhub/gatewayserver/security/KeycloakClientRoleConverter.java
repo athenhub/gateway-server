@@ -1,4 +1,4 @@
-package com.athenhub.gatewayserver.config;
+package com.athenhub.gatewayserver.security;
 
 import java.util.Collection;
 import java.util.Map;
@@ -163,7 +163,9 @@ public class KeycloakClientRoleConverter implements Converter<Jwt, Flux<GrantedA
   private String normalizeRole(String role) {
     // 문자열 정규화 메서드
     // role이 null일 경우 ""처럼 빈 문자열 return
-    if (role == null) return "";
+    if (role == null) {
+      return "";
+    }
     // 앞뒤 공백을 제거한 문자열로 정리
     String trimmed = role.trim();
     // 이미 "ROLE_"로 시작하면 그대로 반환, 아닐 경우 "ROLE_"를 붙여서 반환

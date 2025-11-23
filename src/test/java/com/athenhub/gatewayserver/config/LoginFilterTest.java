@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.athenhub.gatewayserver.error.GatewayAuthenticationException;
 import com.athenhub.gatewayserver.error.GlobalErrorCode;
+import com.athenhub.gatewayserver.security.LoginFilter;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;

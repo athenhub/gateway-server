@@ -2,6 +2,7 @@ package com.athenhub.gatewayserver.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.athenhub.gatewayserver.security.KeycloakClientRoleConverter;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -106,7 +107,7 @@ class KeycloakClientRoleConverterTest {
         .containsExactlyInAnyOrder(
             "ROLE_MASTER_MANAGER", // 그대로 유지
             "ROLE_SHIPPING_AGENT" // 새로 prefix 추가
-            );
+        );
   }
 
   @Test
