@@ -39,7 +39,7 @@ import reactor.core.publisher.Mono;
  * 응답한다.
  */
 @Component
-public class LoginFilter implements GlobalFilter, Ordered {
+public class AddMemberInfoFilter implements GlobalFilter, Ordered {
   // GlobalFilter, Ordered 이 두개의 인터페이스를 구현한 LoginFilter 클래스
 
   // 사용자 정보를 담기 위한 HTTP 헤더 이름 상수들
@@ -109,6 +109,9 @@ public class LoginFilter implements GlobalFilter, Ordered {
                 return chain.filter(exchange);
               }
               Jwt jwt = jwtAuth.getToken();
+
+              // 토큰유효성체크...
+
               // 권한 정보
               List<String> roles = extractRoles(jwt);
 
@@ -121,16 +124,16 @@ public class LoginFilter implements GlobalFilter, Ordered {
                       StandardCharsets.UTF_8);
 
               // Slack ID: 반드시 존재해야 함 (없으면 예외 발생 → 전역 핸들러에서 처리)
-              String slackId = jwt.getClaimAsString("slack_id");
-              if (!StringUtils.hasText(slackId)) {
-                slackId = jwt.getClaimAsString("slackId");
-              }
-
-              if (!StringUtils.hasText(slackId)) {
-                return Mono.error(
-                    new GatewayAuthenticationException(
-                        GlobalErrorCode.UNAUTHORIZED, "Slack ID가 JWT에 존재하지 않습니다."));
-              }
+//              String slackId = jwt.getClaimAsString("slack_id");
+//              if (!StringUtils.hasText(slackId)) {
+//                slackId = jwt.getClaimAsString("slackId");
+//              }
+//
+//              if (!StringUtils.hasText(slackId)) {
+//                return Mono.error(
+//                    new GatewayAuthenticationException(
+//                        GlobalErrorCode.UNAUTHORIZED, "Slack ID가 JWT에 존재하지 않습니다."));
+//              }
 
               // 헤더에 사용자 정보 추가
               ServerHttpRequest mutatedRequest =
@@ -147,7 +150,7 @@ public class LoginFilter implements GlobalFilter, Ordered {
                               .filter(s -> s.startsWith("ROLE_"))
                               .collect(Collectors.joining(",")))
                       .header(HEADER_USER_NAME, name)
-                      .header(HEADER_SLACK_ID, slackId)
+                      .header(HEADER_SLACK_ID, "")
                       .build();
 
               return chain.filter(exchange.mutate().request(mutatedRequest).build());

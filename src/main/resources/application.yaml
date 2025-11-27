@@ -48,11 +48,28 @@ keycloak:
 
 eureka:
   instance:
-    prefer-ip-address: false
-    hostname: localhost
+    prefer-ip-address: true
 
   client:
     register-with-eureka: true
     fetch-registry: true # 클라이언트 사이드 로드밸런싱을 위해, 유레카 정보를 다운 받는다.
     service-url:
       defaultZone: http://3.38.80.105:9150/eureka/
+
+
+springdoc:
+  enable-native-support: true
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /api-docs.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    doc-expansion: full
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - url: /member-service/v3/api-docs
+        name: USER API
+      - url: /hub-service/v3/api-docs
+        name: HUB API

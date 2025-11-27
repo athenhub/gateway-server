@@ -24,15 +24,15 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import reactor.core.publisher.Mono;
 
-class LoginFilterTest {
+class AddMemberInfoFilterTest {
 
-  private LoginFilter loginFilter;
+  private AddMemberInfoFilter loginFilter;
   private Jwt jwtWithSlackId; // slack_id 있음
   private Jwt jwtWithoutSlackId; // slack_id 없음
 
   @BeforeEach
   void setUp() {
-    loginFilter = new LoginFilter();
+    loginFilter = new AddMemberInfoFilter();
 
     // 기본 JWT: slack_id 있고, ROLE_만 있는 단순한 형태
     jwtWithSlackId =

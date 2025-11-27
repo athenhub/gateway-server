@@ -10,13 +10,12 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 /**
  * Spring WebFlux 기반 보안 설정 클래스.
  *
- * <p>이 Gateway 애플리케이션을 OAuth2 Resource Server(JWT)로 동작시키고,
- * 공개 엔드포인트와 인증이 필요한 엔드포인트를 구분하는 역할을 한다.</p>
+ * <p>이 Gateway 애플리케이션을 OAuth2 Resource Server(JWT)로 동작시키고, 공개 엔드포인트와 인증이 필요한 엔드포인트를 구분하는 역할을 한다.
  *
  * <ul>
- *   <li>헬스 체크 및 모니터링, Swagger UI 등은 인증 없이 접근 허용</li>
- *   <li>그 외 모든 API 요청은 JWT 인증을 요구</li>
- *   <li>Keycloak에서 발급한 JWT의 역할 정보를 {@code GrantedAuthority}로 매핑</li>
+ *   <li>헬스 체크 및 모니터링, Swagger UI 등은 인증 없이 접근 허용
+ *   <li>그 외 모든 API 요청은 JWT 인증을 요구
+ *   <li>Keycloak에서 발급한 JWT의 역할 정보를 {@code GrantedAuthority}로 매핑
  * </ul>
  */
 @Configuration
@@ -26,14 +25,14 @@ public class SecurityConfig {
   /**
    * Gateway 서버에 적용할 {@link SecurityWebFilterChain}을 구성한다.
    *
-   * <p>설정 내용은 다음과 같다.</p>
+   * <p>설정 내용은 다음과 같다.
    *
    * <ul>
-   *   <li>CSRF 비활성화 (REST API + 토큰 기반 인증이므로 불필요)</li>
-   *   <li>{@code /actuator/**}, {@code /swagger-ui/**} 등은 인증 없이 접근 허용</li>
-   *   <li>그 외 모든 요청은 인증(유효한 JWT 토큰)을 요구</li>
-   *   <li>JWT → 인증 객체 변환 시 {@link KeycloakClientRoleConverter}를 사용하여
-   *       Keycloak 역할을 Spring Security 권한으로 매핑</li>
+   *   <li>CSRF 비활성화 (REST API + 토큰 기반 인증이므로 불필요)
+   *   <li>{@code /actuator/**}, {@code /swagger-ui/**} 등은 인증 없이 접근 허용
+   *   <li>그 외 모든 요청은 인증(유효한 JWT 토큰)을 요구
+   *   <li>JWT → 인증 객체 변환 시 {@link KeycloakClientRoleConverter}를 사용하여 Keycloak 역할을 Spring Security
+   *       권한으로 매핑
    * </ul>
    *
    * @param http Spring WebFlux 보안 구성을 위한 {@link ServerHttpSecurity}
@@ -54,6 +53,8 @@ public class SecurityConfig {
                 exchanges
                     // 헬스 체크, 모니터링, 문서 등 공개 엔드포인트
                     .pathMatchers(
+                        "/",
+                        "/api/**",
                         "/actuator/health",
                         "/actuator/info",
                         "/swagger-ui.html",
